@@ -108,14 +108,8 @@ module SSHKit
         in_ssh_loop do |chan|
           chan.request_pty if Netssh.config.pty
           chan.exec cmd.to_command do |_ch, _success|
-            chan.on_data do |ch, data|
-              cmd.on_stdout(ch, data)
-              output.log_command_data(cmd, :stdout, data)
-            end
-            chan.on_extended_data do |ch, _type, data|
-              cmd.on_stderr(ch, data)
-              output.log_command_data(cmd, :stderr, data)
-            end
+            chan.on_data { |ch, data| handle_stdout(ch, cmd, data) }
+            chan.on_extended_data { |ch, _type, data| handle_stderr(ch, cmd, data) }
             chan.on_request("exit-status") do |_ch, data|
               exit_status = data.read_long
             end
@@ -127,6 +121,16 @@ module SSHKit
           cmd.exit_status = exit_status
           output.log_command_exit(cmd)
         end
+      end
+
+      def handle_stdout(ch, cmd, data)
+        cmd.on_stdout(ch, data)
+        output.log_command_data(cmd, :stdout, data)
+      end
+
+      def handle_stderr(ch, cmd, data)
+        cmd.on_stderr(ch, data)
+        output.log_command_data(cmd, :stderr, data)
       end
 
       def in_ssh_loop(&block)
