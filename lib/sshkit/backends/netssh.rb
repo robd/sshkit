@@ -105,8 +105,7 @@ module SSHKit
         output.log_command_start(cmd)
         cmd.started = true
         exit_status = nil
-        in_ssh_loop do |chan|
-          chan.request_pty if Netssh.config.pty
+        run_ssh_loop(Netssh.config.pty) do |chan|
           chan.exec cmd.to_command do |_ch, _success|
             chan.on_data do |ch, data|
               cmd.on_stdout(ch, data)
@@ -120,7 +119,6 @@ module SSHKit
               exit_status = data.read_long
             end
           end
-          chan.wait
         end
         # Set exit_status and log the result upon completion
         if exit_status
@@ -129,10 +127,12 @@ module SSHKit
         end
       end
 
-      def in_ssh_loop(&block)
+      def run_ssh_loop(run_with_pty, &block)
         with_ssh do
           ssh.open_channel do |chan|
+            chan.request_pty if run_with_pty
             yield(chan)
+            chan.wait
           end
           ssh.loop
         end
