@@ -106,21 +106,21 @@ module SSHKit
         cmd.started = true
         exit_status = nil
         in_ssh_loop do |chan|
-            chan.request_pty if Netssh.config.pty
-            chan.exec cmd.to_command do |_ch, _success|
-              chan.on_data do |ch, data|
-                cmd.on_stdout(ch, data)
-                output.log_command_data(cmd, :stdout, data)
-              end
-              chan.on_extended_data do |ch, _type, data|
-                cmd.on_stderr(ch, data)
-                output.log_command_data(cmd, :stderr, data)
-              end
-              chan.on_request("exit-status") do |_ch, data|
-                exit_status = data.read_long
-              end
+          chan.request_pty if Netssh.config.pty
+          chan.exec cmd.to_command do |_ch, _success|
+            chan.on_data do |ch, data|
+              cmd.on_stdout(ch, data)
+              output.log_command_data(cmd, :stdout, data)
             end
-            chan.wait
+            chan.on_extended_data do |ch, _type, data|
+              cmd.on_stderr(ch, data)
+              output.log_command_data(cmd, :stderr, data)
+            end
+            chan.on_request("exit-status") do |_ch, data|
+              exit_status = data.read_long
+            end
+          end
+          chan.wait
         end
         # Set exit_status and log the result upon completion
         if exit_status
