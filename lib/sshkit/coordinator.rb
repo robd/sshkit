@@ -10,14 +10,15 @@ module SSHKit
     end
 
     def each(options={}, &block)
+      options = SSHKit.config.default_runner_config.merge(options)
       if hosts
-        options = default_options.merge(options)
-        case options[:in]
+        runner = options[:in] || SSHKit.config.default_runner
+        case runner
         when :parallel then Runner::Parallel
         when :sequence then Runner::Sequential
         when :groups   then Runner::Group
         else
-          options[:in]
+          runner
         end.new(hosts, options, &block).execute
       else
         Runner::Null.new(hosts, options, &block).execute
@@ -25,10 +26,6 @@ module SSHKit
     end
 
     private
-
-    def default_options
-      SSHKit.config.default_runner_config
-    end
 
     def resolve_hosts
       @raw_hosts.collect { |rh| rh.is_a?(Host) ? rh : Host.new(rh) }.uniq
