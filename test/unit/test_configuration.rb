@@ -59,7 +59,7 @@ module SSHKit
 
     def test_default_runner_config
       config_hash = { wait: 5 }
-      assert_equal Hash.new, SSHKit.config.default_runner_config
+      assert_equal({ in: SSHKit.config.default_runner }, SSHKit.config.default_runner_config)
       SSHKit.config.default_runner = config_hash
       assert_equal config_hash, SSHKit.config.default_runner
     end
